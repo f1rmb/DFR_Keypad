@@ -16,6 +16,10 @@
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+  Based on DFR_Key code Glendon Klassen <gjklassen@gmail.com>
+    - http://www.sourceforge.net/users/ecefixer
+    - http://ecefixer.tumblr.com
 */
 #ifndef DFR_Keypad_h
 #define DFR_Keypad_h
