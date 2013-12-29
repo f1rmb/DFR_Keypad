@@ -1,4 +1,6 @@
 /*
+  DFR_Keypad class library example for Arduino (tm), version 0.1
+
   Copyright (C) 2013 F1RMB, Daniel Caujolle-Bert <f1rmb.daniel@gmail.com>
 
   This program is free software; you can redistribute it and/or
