@@ -1,5 +1,5 @@
 /*
-  DFR_Keypad class library for Arduino (tm), version 2.2
+  DFR_Keypad class library for Arduino (tm), version 2.3
 
   Copyright (C) 2013 F1RMB, Daniel Caujolle-Bert <f1rmb.daniel@gmail.com>
 
@@ -24,20 +24,20 @@
 #include <Arduino.h>
 #include "DFR_Keypad.h"
 
-static const int DEFAULT_THRESHOLD  = 5;
+static const int16_t DEFAULT_THRESHOLD  = 5;
 
 // Analog readed value for each buttons
-static const int UPKEY_ARV          = 98;
-static const int DOWNKEY_ARV        = 251;
-static const int LEFTKEY_ARV        = 402;
-static const int RIGHTKEY_ARV       = 0;
-static const int SELKEY_ARV         = 636;
+static const int16_t UPKEY_ARV          = 98;
+static const int16_t DOWNKEY_ARV        = 251;
+static const int16_t LEFTKEY_ARV        = 402;
+static const int16_t RIGHTKEY_ARV       = 0;
+static const int16_t SELKEY_ARV         = 636;
 
-static struct
+static const struct
 {
     DFR_Key_t   key;
-    int         value;
-} keys[] =
+    int16_t    value;
+} keys[] PROGMEM =
 {
     { KEY_UP,       UPKEY_ARV       },
     { KEY_DOWN,     DOWNKEY_ARV     },
@@ -138,26 +138,26 @@ DFR_Key_t DFR_Keypad::getKey()
 
 DFR_Key_t DFR_Keypad::_getKeyFromAnalogValue()
 {
-    for (int i = 0; keys[i].key != KEY_NO; i++)
+    for (size_t i = 0; pgm_read_byte(&keys[i].key) != KEY_NO; i++)
     {
-        if ((m_curInput > (keys[i].value - m_threshold)) && (m_curInput < (keys[i].value + m_threshold)))
-            return keys[i].key;
+        if ((m_curInput > (int16_t)(pgm_read_word(&keys[i].value) - m_threshold)) && (m_curInput < (int16_t)(pgm_read_word(&keys[i].value) + m_threshold)))
+            return ((DFR_Key_t) pgm_read_byte(&keys[i].key));
     }
 
     return KEY_NO;
 }
 
-int DFR_Keypad::getAnalogValue()
+uint16_t DFR_Keypad::getAnalogValue()
 {
     return m_curInput;
 }
 
-void DFR_Keypad::setRefreshRate(unsigned int rate)
+void DFR_Keypad::setRefreshRate(uint16_t rate)
 {
     m_refreshRate = rate;
 }
 
-unsigned int DFR_Keypad::getRefreshRate()
+uint16_t DFR_Keypad::getRefreshRate()
 {
     return m_refreshRate;
 }
@@ -172,12 +172,12 @@ uint8_t DFR_Keypad::getKeyPin()
     return m_keyPin;
 }
 
-void DFR_Keypad::setThreshold(int threshold)
+void DFR_Keypad::setThreshold(uint16_t threshold)
 {
     m_threshold = threshold;
 }
 
-int DFR_Keypad::getThreshold()
+uint16_t DFR_Keypad::getThreshold()
 {
     return m_threshold;
 }
@@ -265,6 +265,39 @@ void DFR_Keypad::printCenter(const char *str)
             LiquidCrystal::noAutoscroll();
         }
     }
+}
+
+void DFR_Keypad::printCenter(const __FlashStringHelper *ifsh)
+{
+    const char * __attribute__((progmem)) p = (const char *)ifsh;
+    size_t                                n = 0;
+
+    while (1)
+    {
+        unsigned char c = pgm_read_byte(p++);
+        if (c == 0)
+            break;
+        n++;
+    }
+
+    if (!n)
+        return;
+
+    char     buf[n + 1];
+    char    *pp = buf;
+
+    p = (const char *) ifsh;
+
+    while (1)
+    {
+        unsigned char c = pgm_read_byte(p++);
+        *pp = c;
+        pp++;
+
+        if (c == 0)
+            break;
+    }
+    printCenter(buf);
 }
 
 void DFR_Keypad::setBacklightTimeout(unsigned long ms)

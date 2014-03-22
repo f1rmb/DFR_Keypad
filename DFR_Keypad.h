@@ -1,5 +1,5 @@
 /*
-  DFR_Keypad class library for Arduino (tm), version 2.2
+  DFR_Keypad class library for Arduino (tm), version 2.3
 
   Copyright (C) 2013 F1RMB, Daniel Caujolle-Bert <f1rmb.daniel@gmail.com>
 
@@ -44,16 +44,16 @@ class DFR_Keypad : public LiquidCrystal
         DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, int8_t bcl = -1, uint8_t rs = 8, uint8_t enable = 9, uint8_t d0 = 4, uint8_t d1 = 5, uint8_t d2 = 6, uint8_t d3 = 7);
 
         DFR_Key_t       getKey();
-        int             getAnalogValue();
+        uint16_t        getAnalogValue();
 
-        void            setRefreshRate(unsigned int rate);
-        unsigned int    getRefreshRate();
+        void            setRefreshRate(uint16_t rate);
+        uint16_t        getRefreshRate();
 
         void            setKeyPin(uint8_t keyPin);
         uint8_t         getKeyPin();
 
-        void            setThreshold(int threshold);
-        int             getThreshold();
+        void            setThreshold(uint16_t threshold);
+        uint16_t        getThreshold();
 
         void            initLCD(uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3);
 
@@ -64,6 +64,7 @@ class DFR_Keypad : public LiquidCrystal
         void            getCursor(uint8_t &col, uint8_t &row);
 
         void            printCenter(const char *str);
+        void            printCenter(const __FlashStringHelper *ifsh);
 
         void            setBacklightTimeout(unsigned long ms);
         unsigned long   getBacklightTimeout();
@@ -77,7 +78,7 @@ class DFR_Keypad : public LiquidCrystal
         uint8_t         m_cols, m_rows;
         unsigned int    m_refreshRate;
         uint8_t         m_keyPin;
-        int             m_threshold;
+        int16_t         m_threshold;
         DFR_Key_t       m_keyIn;
         int             m_curInput;
         DFR_Key_t       m_curKey;
