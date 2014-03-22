@@ -48,9 +48,11 @@ static struct
 };
 
 
-DFR_Keypad::DFR_Keypad(uint8_t keyPin, uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3) : LiquidCrystal(rs, enable, d0, d1, d2, d3),
+DFR_Keypad::DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3) : LiquidCrystal(rs, enable, d0, d1, d2, d3),
+    m_cols(cols), m_rows(rows),
     m_refreshRate(10), m_keyPin(keyPin), m_threshold(DEFAULT_THRESHOLD), m_keyIn(KEY_NO),
-    m_curInput(0), m_curKey(KEY_NO), m_prevInput(0), m_prevKey(KEY_NO), m_changed(false), m_oldTime(0)
+    m_curInput(0), m_curKey(KEY_NO), m_prevInput(0), m_prevKey(KEY_NO), m_changed(false), m_oldTime(0),
+    m_curCol(0), m_curRow(0)
 {
     initLCD(rs, enable, d0, d1, d2, d3);
 }
@@ -132,8 +134,85 @@ int DFR_Keypad::getThreshold()
 
 void DFR_Keypad::initLCD(uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3)
 {
+    m_curCol = 0;
+    m_curRow = 0;
     LiquidCrystal::init(1, rs, 255, enable, d0, d1, d2, d3, 0, 0, 0, 0);
-    LiquidCrystal::begin(16, 2);
+    LiquidCrystal::begin(m_cols, m_rows);
     LiquidCrystal::clear();
-    LiquidCrystal::setCursor(0, 0);
+    LiquidCrystal::setCursor(m_curCol, m_curRow);
+}
+
+void DFR_Keypad::getCursor(uint8_t &col, uint8_t &row)
+{
+    col = m_curCol;
+    row = m_curRow;
+}
+
+void  DFR_Keypad::setCursor(uint8_t col, uint8_t row)
+{
+    m_curCol = col;
+    m_curRow = row;
+
+    LiquidCrystal::setCursor(col, row);
+}
+
+uint8_t DFR_Keypad::getCols()
+{
+    return m_cols;
+}
+
+uint8_t DFR_Keypad::getRows()
+{
+    return m_rows;
+}
+
+void DFR_Keypad::printCenter(const char *str)
+{
+    if (str)
+    {
+        uint8_t len = strlen(str);
+
+        if (len <= m_cols)
+        {
+            uint8_t x = (m_cols - len) >> 1;
+
+            setCursor(x, m_curRow);
+            LiquidCrystal::print(str);
+        }
+        else
+        {
+            char buf[m_cols + 1];
+            char *p = (char *)str + m_cols;
+            char *pp = p;
+
+            snprintf(buf, sizeof(buf), "%s", str);
+
+            setCursor(0, m_curRow);
+            LiquidCrystal::print(buf);
+
+            delay(SCROLL_DELAY);
+
+            setCursor(m_cols, m_curRow);
+            LiquidCrystal::autoscroll();
+
+            while (*p != '\0')
+            {
+                LiquidCrystal::print(*p);
+                delay(SCROLL_DELAY);
+                p++;
+            }
+
+            LiquidCrystal::rightToLeft();
+
+            do
+            {
+                LiquidCrystal::print(*p);
+                delay(SCROLL_DELAY);
+                p--;
+            } while (p != pp);
+
+            LiquidCrystal::leftToRight();
+            LiquidCrystal::noAutoscroll();
+        }
+    }
 }

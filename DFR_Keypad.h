@@ -41,7 +41,7 @@ typedef enum
 class DFR_Keypad : public LiquidCrystal
 {
     public:
-        DFR_Keypad(uint8_t keyPin = 0, uint8_t rs = 8, uint8_t enable = 9, uint8_t d0 = 4, uint8_t d1 = 5, uint8_t d2 = 6, uint8_t d3 = 7);
+        DFR_Keypad(uint8_t cols = 16, uint8_t rows = 2, uint8_t keyPin = 0, uint8_t rs = 8, uint8_t enable = 9, uint8_t d0 = 4, uint8_t d1 = 5, uint8_t d2 = 6, uint8_t d3 = 7);
 
         DFR_Key_t       getKey();
         int             getAnalogValue();
@@ -57,10 +57,21 @@ class DFR_Keypad : public LiquidCrystal
 
         void            initLCD(uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3);
 
+        uint8_t         getCols();
+        uint8_t         getRows();
+
+        void            setCursor(uint8_t col, uint8_t row);
+        void            getCursor(uint8_t &col, uint8_t &row);
+
+        void            printCenter(const char *str);
+
     private:
         DFR_Key_t       _getKeyFromAnalogValue();
 
+        static const unsigned long SCROLL_DELAY = 300;
+
     private:
+        uint8_t         m_cols, m_rows;
         unsigned int    m_refreshRate;
         uint8_t         m_keyPin;
         int             m_threshold;
@@ -71,6 +82,7 @@ class DFR_Keypad : public LiquidCrystal
         DFR_Key_t       m_prevKey;
         boolean         m_changed;
         unsigned long   m_oldTime;
+        uint8_t         m_curCol, m_curRow;
 };
 
 #endif
