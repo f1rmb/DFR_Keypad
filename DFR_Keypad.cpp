@@ -1,5 +1,5 @@
 /*
-  DFR_Keypad class library for Arduino (tm), version 2.1
+  DFR_Keypad class library for Arduino (tm), version 2.2
 
   Copyright (C) 2013 F1RMB, Daniel Caujolle-Bert <f1rmb.daniel@gmail.com>
 
@@ -48,17 +48,26 @@ static struct
 };
 
 
-DFR_Keypad::DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3) : LiquidCrystal(rs, enable, d0, d1, d2, d3),
+DFR_Keypad::DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, int8_t bcl, uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3) : LiquidCrystal(rs, enable, d0, d1, d2, d3),
     m_cols(cols), m_rows(rows),
     m_refreshRate(10), m_keyPin(keyPin), m_threshold(DEFAULT_THRESHOLD), m_keyIn(KEY_NO),
     m_curInput(0), m_curKey(KEY_NO), m_prevInput(0), m_prevKey(KEY_NO), m_changed(false), m_oldTime(0),
-    m_curCol(0), m_curRow(0)
+    m_curCol(0), m_curRow(0), m_bclPin(bcl), m_lastKeyTime(0), m_bclTimeout(0), m_dimmed(false)
 {
     initLCD(rs, enable, d0, d1, d2, d3);
+
+    if(m_bclPin != -1)
+    {
+        pinMode(m_bclPin, OUTPUT);
+        digitalWrite(m_bclPin, HIGH);
+        m_bclTimeout = 10000; // 10s timeout;
+    }
 }
 
 DFR_Key_t DFR_Keypad::getKey()
 {
+    if (m_lastKeyTime == 0)
+        m_lastKeyTime = millis();
 
     if (millis() > (m_oldTime + m_refreshRate))
     {
@@ -80,7 +89,45 @@ DFR_Key_t DFR_Keypad::getKey()
         m_oldTime = millis();
 
         if (m_changed)
+        {
+            if (m_bclPin != -1)
+            {
+                if (m_dimmed)
+                {
+                    uint8_t n = 0;
+
+                    while (n < 254)
+                    {
+                        analogWrite(m_bclPin, n);
+                        delay(2);
+                        n += 2;
+                    }
+
+                    digitalWrite(m_bclPin, HIGH);
+                    m_dimmed = false;
+                }
+
+                m_lastKeyTime = millis();
+            }
+
             return m_curKey;
+        }
+    }
+
+    if ((m_bclPin != -1) && (!m_dimmed) && (m_bclTimeout > 0) && ((millis() - m_lastKeyTime) >= m_bclTimeout))
+    {
+        uint8_t n = 254;
+
+        while (n != 0)
+        {
+            analogWrite(m_bclPin, n);
+            delay(2);
+            n -= 2;
+        }
+
+        digitalWrite(m_bclPin, LOW);
+        m_lastKeyTime = millis();
+        m_dimmed = true;
     }
 
     return KEY_WAIT;
@@ -215,4 +262,15 @@ void DFR_Keypad::printCenter(const char *str)
             LiquidCrystal::noAutoscroll();
         }
     }
+}
+
+void DFR_Keypad::setBacklightTimeout(unsigned long ms)
+{
+    if (m_bclPin != -1)
+        m_bclTimeout = ms;
+}
+
+unsigned long DFR_Keypad::getBacklightTimeout()
+{
+    return m_bclTimeout;
 }

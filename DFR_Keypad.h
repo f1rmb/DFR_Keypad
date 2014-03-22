@@ -1,5 +1,5 @@
 /*
-  DFR_Keypad class library for Arduino (tm), version 2.1
+  DFR_Keypad class library for Arduino (tm), version 2.2
 
   Copyright (C) 2013 F1RMB, Daniel Caujolle-Bert <f1rmb.daniel@gmail.com>
 
@@ -41,7 +41,7 @@ typedef enum
 class DFR_Keypad : public LiquidCrystal
 {
     public:
-        DFR_Keypad(uint8_t cols = 16, uint8_t rows = 2, uint8_t keyPin = 0, uint8_t rs = 8, uint8_t enable = 9, uint8_t d0 = 4, uint8_t d1 = 5, uint8_t d2 = 6, uint8_t d3 = 7);
+        DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, int8_t bcl = -1, uint8_t rs = 8, uint8_t enable = 9, uint8_t d0 = 4, uint8_t d1 = 5, uint8_t d2 = 6, uint8_t d3 = 7);
 
         DFR_Key_t       getKey();
         int             getAnalogValue();
@@ -65,6 +65,9 @@ class DFR_Keypad : public LiquidCrystal
 
         void            printCenter(const char *str);
 
+        void            setBacklightTimeout(unsigned long ms);
+        unsigned long   getBacklightTimeout();
+
     private:
         DFR_Key_t       _getKeyFromAnalogValue();
 
@@ -83,6 +86,10 @@ class DFR_Keypad : public LiquidCrystal
         boolean         m_changed;
         unsigned long   m_oldTime;
         uint8_t         m_curCol, m_curRow;
+        int8_t          m_bclPin;
+        unsigned long   m_lastKeyTime;
+        unsigned long   m_bclTimeout;
+        bool            m_dimmed;
 };
 
 #endif

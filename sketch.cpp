@@ -46,14 +46,14 @@ String      keyString;
 **   LiquidCrystal(8, 9, 4, 5, 6, 7);
 ** DFR_Keypad class use these as default pins
 */
-DFR_Keypad  keypad(keyPin);
+DFR_Keypad  keypad(16, 2, keyPin, 10);
 
 void setup()
 {
     keypad.print("Key Grab v1.0");
     keypad.setCursor(0, 1);
     keypad.print("(c) 2013 - f1rmb");
-    delay(2500);
+    delay(1000);
 
     /*
     ** OPTIONAL
@@ -96,9 +96,11 @@ void loop()
                 break;
             case KEY_UP:
                 keyString = "UP";
+                //keypad.display();
                 break;
             case KEY_DOWN:
                 keyString = "DOWN";
+                //keypad.noDisplay();
                 break;
             case KEY_LEFT:
                 keyString = "LEFT";
