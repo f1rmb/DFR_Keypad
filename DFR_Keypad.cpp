@@ -90,6 +90,8 @@ DFR_Key_t DFR_Keypad::getKey()
 
         if (m_changed)
         {
+            bool returnWait = false;
+
             if (m_bclPin != -1)
             {
                 if (m_dimmed)
@@ -104,13 +106,14 @@ DFR_Key_t DFR_Keypad::getKey()
                     }
 
                     digitalWrite(m_bclPin, HIGH);
-                    m_dimmed = false;
+                    m_dimmed   = false;
+                    returnWait = true;
                 }
 
                 m_lastKeyTime = millis();
             }
 
-            return m_curKey;
+            return (returnWait ? KEY_WAIT : m_curKey);
         }
     }
 
