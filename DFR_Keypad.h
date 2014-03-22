@@ -1,5 +1,5 @@
 /*
-  DFR_Keypad class library for Arduino (tm), version 2.0
+  DFR_Keypad class library for Arduino (tm), version 2.1
 
   Copyright (C) 2013 F1RMB, Daniel Caujolle-Bert <f1rmb.daniel@gmail.com>
 
