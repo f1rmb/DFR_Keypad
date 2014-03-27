@@ -50,19 +50,35 @@ DFR_Keypad  keypad(16, 2, keyPin, 10);
 
 void setup()
 {
-    keypad.print("Key Grab v1.0");
+    keypad.setRepeatMode(false);
+
+    Serial.begin(9600);
+    keypad.print(F("Key Grab v1.0"));
     keypad.setCursor(0, 1);
-    keypad.print("(c) 2013 - f1rmb");
+    keypad.print(F("(c) 2013 - f1rmb"));
     delay(1000);
 
+    keypad.clear();
+    keypad.setCursor(0, 0);
+    keypad.print(F("Press a Key:"));
+    keypad.setCursor(0, 1);
     /*
     ** OPTIONAL
     ** keypad.setRate(x);
     ** Sets the sample rate at once every x milliseconds.
     **
-    ** Default: 10ms
+    ** Default: 100ms
     */
-    //keypad.setRefreshRate(10);
+    //keypad.setRefreshRate(200);
+
+    /*
+    ** OPTIONAL
+    ** keypad.setLongPressThreshold(x);
+    ** Sets the threshold value for long press key state
+    **
+    ** Default: 800ms
+    */
+    keypad.setLongPressThreshold(1000);
 }
 
 void loop()
@@ -76,14 +92,13 @@ void loop()
     **   OR
     ** Returns KEY_WAIT (sample wait) when no key is available to be sampled.
     */
-
     localKey = keypad.getKey();
 
     if (localKey != KEY_WAIT)
     {
         keypad.clear();
         keypad.setCursor(0, 0);
-        keypad.print("Press a Key:");
+        keypad.print(F("Press a Key:"));
         keypad.setCursor(0, 1);
 
         switch (localKey)
@@ -115,7 +130,7 @@ void loop()
                 keyString = "UNK";
         }
 
-        keyString = keyString + " (" + keypad.getAnalogValue() + ")";
+        keyString = keyString + "(" + keypad.getAnalogValue() + ")" + "L: " + (keypad.isLongPressed() ? "1" : "0");
         keypad.print(keyString);
     }
 }

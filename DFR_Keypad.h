@@ -38,6 +38,7 @@ typedef enum
     KEY_SELECT
 } DFR_Key_t;
 
+
 class DFR_Keypad : public LiquidCrystal
 {
     public:
@@ -49,11 +50,15 @@ class DFR_Keypad : public LiquidCrystal
         void            setRefreshRate(uint16_t rate);
         uint16_t        getRefreshRate();
 
-        void            setKeyPin(uint8_t keyPin);
-        uint8_t         getKeyPin();
+        void            setAnalogThreshold(uint16_t threshold);
+        uint16_t        getAnalogThreshold();
 
-        void            setThreshold(uint16_t threshold);
-        uint16_t        getThreshold();
+        void            setLongPressThreshold(uint16_t threshold);
+        uint16_t        getLongPressThreshold();
+        bool            isLongPressed();
+
+        void            setRepeatMode(bool sets = true);
+        bool            getRepeatMode();
 
         void            initLCD(uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3);
 
@@ -70,7 +75,7 @@ class DFR_Keypad : public LiquidCrystal
         unsigned long   getBacklightTimeout();
 
     private:
-        DFR_Key_t       _getKeyFromAnalogValue();
+        DFR_Key_t       _getKeyFromAnalogValue(int curInput);
 
         static const unsigned long SCROLL_DELAY = 300;
 
@@ -82,15 +87,27 @@ class DFR_Keypad : public LiquidCrystal
         DFR_Key_t       m_keyIn;
         int             m_curInput;
         DFR_Key_t       m_curKey;
-        int             m_prevInput;
-        DFR_Key_t       m_prevKey;
-        boolean         m_changed;
+        //int             m_prevInput;
+        //DFR_Key_t       m_prevKey;
+        //boolean         m_changed;
         unsigned long   m_oldTime;
+
+        // LCD
         uint8_t         m_curCol, m_curRow;
+
+        // backlight dimming
         int8_t          m_bclPin;
         unsigned long   m_lastKeyTime;
         unsigned long   m_bclTimeout;
         bool            m_dimmed;
+
+        // Support repeat
+        bool            m_repeat;
+
+        // Long press feature
+        unsigned long   m_pressTime;
+        bool            m_longPress;
+        uint16_t        m_longPressThreshold;
 };
 
 #endif

@@ -24,7 +24,8 @@
 #include <Arduino.h>
 #include "DFR_Keypad.h"
 
-static const int16_t DEFAULT_THRESHOLD  = 5;
+static const int16_t    DEFAULT_THRESHOLD           = 5;
+static const uint16_t   DEFAULT_LONGPRESS_THRESHOLD = 800; // ms
 
 // Analog readed value for each buttons
 static const int16_t UPKEY_ARV          = 98;
@@ -47,12 +48,14 @@ static const struct
     { KEY_NO,       0               }
 };
 
-
 DFR_Keypad::DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, int8_t bcl, uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3) : LiquidCrystal(rs, enable, d0, d1, d2, d3),
     m_cols(cols), m_rows(rows),
-    m_refreshRate(10), m_keyPin(keyPin), m_threshold(DEFAULT_THRESHOLD), m_keyIn(KEY_NO),
-    m_curInput(0), m_curKey(KEY_NO), m_prevInput(0), m_prevKey(KEY_NO), m_changed(false), m_oldTime(0),
-    m_curCol(0), m_curRow(0), m_bclPin(bcl), m_lastKeyTime(0), m_bclTimeout(0), m_dimmed(false)
+    m_refreshRate(100), m_keyPin(keyPin), m_threshold(DEFAULT_THRESHOLD), m_keyIn(KEY_NO),
+    m_curInput(0), m_curKey(KEY_NO), m_oldTime(0),
+    m_curCol(0), m_curRow(0),
+    m_bclPin(bcl), m_lastKeyTime(0), m_bclTimeout(0), m_dimmed(false),
+    m_repeat(false),
+    m_pressTime(0), m_longPress(false), m_longPressThreshold(DEFAULT_LONGPRESS_THRESHOLD)
 {
     initLCD(rs, enable, d0, d1, d2, d3);
 
@@ -71,29 +74,30 @@ DFR_Key_t DFR_Keypad::getKey()
 
     if (millis() > (m_oldTime + m_refreshRate))
     {
-        m_prevInput = m_curInput;
         m_curInput  = analogRead(m_keyPin);
+        m_curKey    = _getKeyFromAnalogValue(m_curInput);
+        m_oldTime   = millis();
 
-        if (m_curInput == m_prevInput)
+        if (m_curKey != KEY_NO)
         {
-            m_changed = false;
-            m_curKey  = m_prevKey;
-        }
-        else
-        {
-            m_changed = true;
-            m_prevKey = m_curKey;
-            m_curKey  = _getKeyFromAnalogValue();
-        }
+            unsigned long pressTimeStart = 0, pressTimeEnd = 0;
 
-        m_oldTime = millis();
+            if (m_repeat)
+                delay(m_refreshRate);
+            else
+            {
+                pressTimeStart = millis();
 
-        if (m_changed)
-        {
-            bool returnWait = false;
+                while (_getKeyFromAnalogValue(analogRead(m_keyPin)) != KEY_NO) ; // Wait for key release
 
+                pressTimeEnd = millis();
+            }
+
+            // Backlight ?
             if (m_bclPin != -1)
             {
+                bool returnWait = false;
+
                 if (m_dimmed)
                 {
                     uint8_t n = 0;
@@ -111,12 +115,18 @@ DFR_Key_t DFR_Keypad::getKey()
                 }
 
                 m_lastKeyTime = millis();
+
+                if (returnWait)
+                    return KEY_WAIT;
             }
 
-            return (returnWait ? KEY_WAIT : m_curKey);
+            m_longPress = m_repeat ? false : ((pressTimeEnd - pressTimeStart) > m_longPressThreshold ? 1 : 0);
+
+            return m_curKey;
         }
     }
 
+    // Is backlight auto-dimming is enable, check if it's time to turn dimming on
     if ((m_bclPin != -1) && (!m_dimmed) && (m_bclTimeout > 0) && ((millis() - m_lastKeyTime) >= m_bclTimeout))
     {
         uint8_t n = 254;
@@ -133,14 +143,16 @@ DFR_Key_t DFR_Keypad::getKey()
         m_dimmed = true;
     }
 
+    m_longPress = false;
+
     return KEY_WAIT;
 }
 
-DFR_Key_t DFR_Keypad::_getKeyFromAnalogValue()
+DFR_Key_t DFR_Keypad::_getKeyFromAnalogValue(int curInput)
 {
     for (size_t i = 0; pgm_read_byte(&keys[i].key) != KEY_NO; i++)
     {
-        if ((m_curInput > (int16_t)(pgm_read_word(&keys[i].value) - m_threshold)) && (m_curInput < (int16_t)(pgm_read_word(&keys[i].value) + m_threshold)))
+        if ((curInput > (int16_t)(pgm_read_word(&keys[i].value) - m_threshold)) && (curInput < (int16_t)(pgm_read_word(&keys[i].value) + m_threshold)))
             return ((DFR_Key_t) pgm_read_byte(&keys[i].key));
     }
 
@@ -162,24 +174,39 @@ uint16_t DFR_Keypad::getRefreshRate()
     return m_refreshRate;
 }
 
-void DFR_Keypad::setKeyPin(uint8_t keyPin)
-{
-    m_keyPin = keyPin;
-}
-
-uint8_t DFR_Keypad::getKeyPin()
-{
-    return m_keyPin;
-}
-
-void DFR_Keypad::setThreshold(uint16_t threshold)
+void DFR_Keypad::setAnalogThreshold(uint16_t threshold)
 {
     m_threshold = threshold;
 }
 
-uint16_t DFR_Keypad::getThreshold()
+uint16_t DFR_Keypad::getAnalogThreshold()
 {
     return m_threshold;
+}
+
+void DFR_Keypad::setLongPressThreshold(uint16_t threshold)
+{
+    m_longPressThreshold = threshold;
+}
+
+uint16_t DFR_Keypad::getLongPressThreshold()
+{
+    return m_longPressThreshold;
+}
+
+bool DFR_Keypad::isLongPressed()
+{
+    return m_longPress;
+}
+
+void DFR_Keypad::setRepeatMode(bool sets)
+{
+    m_repeat = sets;
+}
+
+bool DFR_Keypad::getRepeatMode()
+{
+    return m_repeat;
 }
 
 void DFR_Keypad::initLCD(uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3)
