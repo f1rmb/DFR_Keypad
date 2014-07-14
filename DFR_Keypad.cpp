@@ -37,7 +37,7 @@ static const int16_t SELKEY_ARV         = 636;
 static const struct
 {
     DFR_Key_t   key;
-    int16_t    value;
+    int16_t     value;
 } keys[] PROGMEM =
 {
     { KEY_UP,       UPKEY_ARV       },
@@ -51,7 +51,7 @@ static const struct
 DFR_Keypad::DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, int8_t bcl, uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3) : LiquidCrystal(rs, enable, d0, d1, d2, d3),
     m_cols(cols), m_rows(rows),
     m_refreshRate(100), m_keyPin(keyPin), m_threshold(DEFAULT_THRESHOLD), m_keyIn(KEY_NO),
-    m_curInput(0), m_curKey(KEY_NO), m_oldTime(0),
+    m_curInput(0), m_curKey(KEY_NO), m_oldKey(KEY_SELECT), m_oldTime(0),
     m_curCol(0), m_curRow(0),
     m_bclPin(bcl), m_lastKeyTime(0), m_bclTimeout(0), m_dimmed(false),
     m_repeat(false),
@@ -61,8 +61,8 @@ DFR_Keypad::DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, int8_t bcl, u
 
     if(m_bclPin != -1)
     {
-        pinMode(m_bclPin, OUTPUT);
-        digitalWrite(m_bclPin, HIGH);
+        pinMode(m_bclPin, INPUT/*OUTPUT*/);
+//        digitalWrite(m_bclPin, HIGH);
         m_bclTimeout = 10000; // 10s timeout;
     }
 }
@@ -88,7 +88,12 @@ DFR_Key_t DFR_Keypad::getKey()
             {
                 pressTimeStart = millis();
 
-                while (_getKeyFromAnalogValue(analogRead(m_keyPin)) != KEY_NO) ; // Wait for key release
+                 // Wait for key release, till m_longPressThreshold max time.
+                while (_getKeyFromAnalogValue(analogRead(m_keyPin)) != KEY_NO)
+                {
+                    if ((millis() - pressTimeStart) > m_longPressThreshold)
+                        break;
+                }
 
                 pressTimeEnd = millis();
             }
@@ -98,29 +103,23 @@ DFR_Key_t DFR_Keypad::getKey()
             {
                 bool returnWait = false;
 
-                if (m_dimmed)
-                {
-                    uint8_t n = 0;
-
-                    while (n < 254)
-                    {
-                        analogWrite(m_bclPin, n);
-                        delay(2);
-                        n += 2;
-                    }
-
-                    digitalWrite(m_bclPin, HIGH);
-                    m_dimmed   = false;
+                if (_wakeupBacklight())
                     returnWait = true;
-                }
 
                 m_lastKeyTime = millis();
 
                 if (returnWait)
+                {
+                    m_oldKey = KEY_WAIT;
                     return KEY_WAIT;
+                }
             }
 
+            if (m_curKey == m_oldKey)
+                return KEY_WAIT;
+
             m_longPress = m_repeat ? false : ((pressTimeEnd - pressTimeStart) > m_longPressThreshold ? 1 : 0);
+            m_oldKey    = m_curKey;
 
             return m_curKey;
         }
@@ -131,13 +130,13 @@ DFR_Key_t DFR_Keypad::getKey()
     {
         uint8_t n = 254;
 
+        pinMode(m_bclPin, OUTPUT);
         while (n != 0)
         {
             analogWrite(m_bclPin, n);
             delay(2);
             n -= 2;
         }
-
         digitalWrite(m_bclPin, LOW);
         m_lastKeyTime = millis();
         m_dimmed = true;
@@ -145,7 +144,32 @@ DFR_Key_t DFR_Keypad::getKey()
 
     m_longPress = false;
 
+    m_oldKey = KEY_WAIT;
     return KEY_WAIT;
+}
+
+bool DFR_Keypad::_wakeupBacklight()
+{
+    if (m_dimmed)
+    {
+        uint8_t n = 0;
+
+        pinMode(m_bclPin, OUTPUT);
+        while (n < 254)
+        {
+            analogWrite(m_bclPin, n);
+            delay(2);
+            n += 2;
+        }
+        digitalWrite(m_bclPin, HIGH);
+        pinMode(m_bclPin, INPUT);
+
+        m_dimmed = false;
+
+        return true;
+    }
+
+    return false;
 }
 
 DFR_Key_t DFR_Keypad::_getKeyFromAnalogValue(int curInput)
@@ -336,4 +360,10 @@ void DFR_Keypad::setBacklightTimeout(unsigned long ms)
 unsigned long DFR_Keypad::getBacklightTimeout()
 {
     return m_bclTimeout;
+}
+
+void DFR_Keypad::timeoutEvent()
+{
+    (void) _wakeupBacklight();
+    m_lastKeyTime = millis();
 }

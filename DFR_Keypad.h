@@ -73,8 +73,10 @@ class DFR_Keypad : public LiquidCrystal
 
         void            setBacklightTimeout(unsigned long ms);
         unsigned long   getBacklightTimeout();
+        void            timeoutEvent();
 
     private:
+        bool            _wakeupBacklight();
         DFR_Key_t       _getKeyFromAnalogValue(int curInput);
 
         static const unsigned long SCROLL_DELAY = 300;
@@ -87,9 +89,7 @@ class DFR_Keypad : public LiquidCrystal
         DFR_Key_t       m_keyIn;
         int             m_curInput;
         DFR_Key_t       m_curKey;
-        //int             m_prevInput;
-        //DFR_Key_t       m_prevKey;
-        //boolean         m_changed;
+        DFR_Key_t       m_oldKey;
         unsigned long   m_oldTime;
 
         // LCD

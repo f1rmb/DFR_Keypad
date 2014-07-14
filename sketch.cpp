@@ -46,7 +46,7 @@ String      keyString;
 **   LiquidCrystal(8, 9, 4, 5, 6, 7);
 ** DFR_Keypad class use these as default pins
 */
-DFR_Keypad  keypad(16, 2, keyPin, 10);
+DFR_Keypad  keypad(16, 2, keyPin, 3);
 
 void setup()
 {
