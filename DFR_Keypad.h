@@ -86,7 +86,6 @@ class DFR_Keypad : public LiquidCrystal
         unsigned int    m_refreshRate;
         uint8_t         m_keyPin;
         int16_t         m_threshold;
-        DFR_Key_t       m_keyIn;
         int             m_curInput;
         DFR_Key_t       m_curKey;
         DFR_Key_t       m_oldKey;

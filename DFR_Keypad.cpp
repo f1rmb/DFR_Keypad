@@ -50,7 +50,7 @@ static const struct
 
 DFR_Keypad::DFR_Keypad(uint8_t cols, uint8_t rows, uint8_t keyPin, int8_t bcl, uint8_t rs, uint8_t enable, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3) : LiquidCrystal(rs, enable, d0, d1, d2, d3),
     m_cols(cols), m_rows(rows),
-    m_refreshRate(100), m_keyPin(keyPin), m_threshold(DEFAULT_THRESHOLD), m_keyIn(KEY_NO),
+    m_refreshRate(100), m_keyPin(keyPin), m_threshold(DEFAULT_THRESHOLD),
     m_curInput(0), m_curKey(KEY_NO), m_oldKey(KEY_SELECT), m_oldTime(0),
     m_curCol(0), m_curRow(0),
     m_bclPin(bcl), m_lastKeyTime(0), m_bclTimeout(0), m_dimmed(false),
@@ -115,7 +115,7 @@ DFR_Key_t DFR_Keypad::getKey()
                 }
             }
 
-            if (m_curKey == m_oldKey)
+            if ((m_curKey == m_oldKey) && !m_repeat)
                 return KEY_WAIT;
 
             m_longPress = m_repeat ? false : ((pressTimeEnd - pressTimeStart) > m_longPressThreshold ? 1 : 0);
